@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Research Paper Intelligence System</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: { primary: '#004fa3', light: '#1a73e8', dark: '#002f6b' }
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+  </style>
+</head>
+<body class="bg-slate-950 text-white">
+
+  <!-- Navbar -->
+  <nav class="fixed top-0 w-full z-50 bg-slate-950/90 backdrop-blur-sm border-b border-slate-800/60">
+    <div class="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+      <span class="text-base font-bold tracking-tight text-white">ResearchPilot</span>
+      <div class="flex items-center gap-3">
+        <a href="https://github.com/AbdelrahmannAdel/Research-System" target="_blank"
+           class="text-slate-400 hover:text-white text-sm transition-colors px-3 py-1.5 rounded-lg hover:bg-slate-800">
+          GitHub
+        </a>
+        <a href="#"
+           class="bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
+          Live Demo
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="pt-36 pb-28 px-6 text-center">
+    <div class="max-w-4xl mx-auto">
+      <div class="inline-flex items-center gap-2 bg-blue-950/50 border border-blue-800/40 rounded-full px-4 py-1.5 text-sm text-blue-300 mb-8">
+        <span class="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></span>
+        AI-Powered Research Tool
+      </div>
+      <h1 class="text-5xl md:text-6xl font-extrabold text-white leading-tight mb-6">
+        Research Paper<br />
+        <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400">
+          Intelligence System
+        </span>
+      </h1>
+      <p class="text-xl text-slate-400 mb-10 max-w-2xl mx-auto leading-relaxed">
+        Upload any research PDF and instantly receive AI-powered classification, a concise summary,
+        extracted keywords, and recommendations for similar papers from arXiv.
+      </p>
+      <div class="flex flex-col sm:flex-row gap-4 justify-center">
+        <a href="#" class="bg-blue-600 hover:bg-blue-500 text-white font-semibold px-8 py-3.5 rounded-xl transition-colors text-base">
+          Try the Demo &rarr;
+        </a>
+        <a href="https://github.com/AbdelrahmannAdel/Research-System" target="_blank"
+           class="border border-slate-700 hover:border-slate-500 text-slate-300 hover:text-white font-semibold px-8 py-3.5 rounded-xl transition-colors text-base">
+          View on GitHub
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section id="features" class="py-24 px-6 bg-slate-900/40">
+    <div class="max-w-6xl mx-auto">
+      <h2 class="text-3xl font-bold text-center text-white mb-3">What It Does</h2>
+      <p class="text-slate-400 text-center mb-14 max-w-xl mx-auto">
+        Four AI-powered capabilities delivered from a single PDF upload.
+      </p>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 hover:border-blue-700/60 transition-colors">
+          <div class="w-12 h-12 bg-blue-950 rounded-xl flex items-center justify-center mb-4 text-2xl">&#x1F4C4;</div>
+          <h3 class="text-base font-semibold text-white mb-2">PDF Upload</h3>
+          <p class="text-slate-400 text-sm leading-relaxed">
+            Upload any research paper as a PDF. Title, abstract, and full text are extracted automatically using PyMuPDF.
+          </p>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 hover:border-blue-700/60 transition-colors">
+          <div class="w-12 h-12 bg-blue-950 rounded-xl flex items-center justify-center mb-4 text-2xl">&#x1F9E0;</div>
+          <h3 class="text-base font-semibold text-white mb-2">AI Classification</h3>
+          <p class="text-slate-400 text-sm leading-relaxed">
+            Fine-tuned SciBERT models categorize papers across 8 main research domains and 40 subcategories aligned with arXiv taxonomy.
+          </p>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 hover:border-blue-700/60 transition-colors">
+          <div class="w-12 h-12 bg-blue-950 rounded-xl flex items-center justify-center mb-4 text-2xl">&#x270D;&#xFE0F;</div>
+          <h3 class="text-base font-semibold text-white mb-2">Smart Summary</h3>
+          <p class="text-slate-400 text-sm leading-relaxed">
+            Google Gemini generates a focused academic summary covering the paper&rsquo;s objective, methodology, and key findings.
+          </p>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 hover:border-blue-700/60 transition-colors">
+          <div class="w-12 h-12 bg-blue-950 rounded-xl flex items-center justify-center mb-4 text-2xl">&#x1F50D;</div>
+          <h3 class="text-base font-semibold text-white mb-2">Paper Recommendations</h3>
+          <p class="text-slate-400 text-sm leading-relaxed">
+            Queries the live arXiv API for 20 candidates, then re-ranks them by semantic cosine similarity to surface the top 10.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- How It Works -->
+  <section id="how" class="py-24 px-6">
+    <div class="max-w-4xl mx-auto">
+      <h2 class="text-3xl font-bold text-center text-white mb-3">How It Works</h2>
+      <p class="text-slate-400 text-center mb-16 max-w-xl mx-auto">
+        Three steps from raw PDF to actionable insights.
+      </p>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-10">
+        <div class="text-center">
+          <div class="w-16 h-16 bg-gradient-to-br from-blue-600 to-blue-800 rounded-2xl flex items-center justify-center text-2xl font-bold text-white mx-auto mb-5 shadow-lg shadow-blue-900/40">
+            1
+          </div>
+          <h3 class="text-base font-semibold text-white mb-2">Upload Your Paper</h3>
+          <p class="text-slate-400 text-sm leading-relaxed">
+            Select any research PDF. The system extracts text, title, and abstract — no manual input required.
+          </p>
+        </div>
+        <div class="text-center">
+          <div class="w-16 h-16 bg-gradient-to-br from-blue-600 to-blue-800 rounded-2xl flex items-center justify-center text-2xl font-bold text-white mx-auto mb-5 shadow-lg shadow-blue-900/40">
+            2
+          </div>
+          <h3 class="text-base font-semibold text-white mb-2">AI Pipeline Runs</h3>
+          <p class="text-slate-400 text-sm leading-relaxed">
+            SciBERT classifies the topic, YAKE pulls the top keywords, and Gemini produces a concise academic summary.
+          </p>
+        </div>
+        <div class="text-center">
+          <div class="w-16 h-16 bg-gradient-to-br from-blue-600 to-blue-800 rounded-2xl flex items-center justify-center text-2xl font-bold text-white mx-auto mb-5 shadow-lg shadow-blue-900/40">
+            3
+          </div>
+          <h3 class="text-base font-semibold text-white mb-2">Discover &amp; Save</h3>
+          <p class="text-slate-400 text-sm leading-relaxed">
+            Browse live arXiv recommendations ranked by relevance. Save results to your personal private library.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Tech Stack -->
+  <section id="stack" class="py-24 px-6 bg-slate-900/40">
+    <div class="max-w-4xl mx-auto">
+      <h2 class="text-3xl font-bold text-center text-white mb-3">Tech Stack</h2>
+      <p class="text-slate-400 text-center mb-14 max-w-xl mx-auto">
+        Built with modern, production-grade open-source tools.
+      </p>
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-xl px-4 py-5 text-center">
+          <div class="text-2xl mb-2">&#x26DB;&#xFE0F;</div>
+          <div class="text-sm font-medium text-white">React</div>
+          <div class="text-xs text-slate-500 mt-0.5">Frontend</div>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 rounded-xl px-4 py-5 text-center">
+          <div class="text-2xl mb-2">&#x1F3A8;</div>
+          <div class="text-sm font-medium text-white">Tailwind CSS</div>
+          <div class="text-xs text-slate-500 mt-0.5">Styling</div>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 rounded-xl px-4 py-5 text-center">
+          <div class="text-2xl mb-2">&#x26A1;</div>
+          <div class="text-sm font-medium text-white">FastAPI</div>
+          <div class="text-xs text-slate-500 mt-0.5">Backend</div>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 rounded-xl px-4 py-5 text-center">
+          <div class="text-2xl mb-2">&#x1F418;</div>
+          <div class="text-sm font-medium text-white">PostgreSQL</div>
+          <div class="text-xs text-slate-500 mt-0.5">Database</div>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 rounded-xl px-4 py-5 text-center">
+          <div class="text-2xl mb-2">&#x1F916;</div>
+          <div class="text-sm font-medium text-white">SciBERT</div>
+          <div class="text-xs text-slate-500 mt-0.5">Classification</div>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 rounded-xl px-4 py-5 text-center">
+          <div class="text-2xl mb-2">&#x1F48E;</div>
+          <div class="text-sm font-medium text-white">Gemini API</div>
+          <div class="text-xs text-slate-500 mt-0.5">Summarization</div>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 rounded-xl px-4 py-5 text-center">
+          <div class="text-2xl mb-2">&#x1F4DA;</div>
+          <div class="text-sm font-medium text-white">arXiv API</div>
+          <div class="text-xs text-slate-500 mt-0.5">Recommendations</div>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 rounded-xl px-4 py-5 text-center">
+          <div class="text-2xl mb-2">&#x1F522;</div>
+          <div class="text-sm font-medium text-white">Sentence-BERT</div>
+          <div class="text-xs text-slate-500 mt-0.5">Embeddings</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Team -->
+  <section id="team" class="py-24 px-6">
+    <div class="max-w-4xl mx-auto">
+      <h2 class="text-3xl font-bold text-center text-white mb-3">The Team</h2>
+      <p class="text-slate-400 text-center mb-14 max-w-xl mx-auto">
+        Senior capstone project &mdash; [University Name], [Year].
+      </p>
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 text-center">
+          <div class="w-16 h-16 bg-gradient-to-br from-blue-800 to-slate-800 rounded-full mx-auto mb-4 flex items-center justify-center text-2xl border border-slate-700">
+            &#x1F464;
+          </div>
+          <h3 class="text-base font-semibold text-white">Team Member 1</h3>
+          <p class="text-slate-400 text-sm mt-1">Role / Specialty</p>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 text-center">
+          <div class="w-16 h-16 bg-gradient-to-br from-blue-800 to-slate-800 rounded-full mx-auto mb-4 flex items-center justify-center text-2xl border border-slate-700">
+            &#x1F464;
+          </div>
+          <h3 class="text-base font-semibold text-white">Team Member 2</h3>
+          <p class="text-slate-400 text-sm mt-1">Role / Specialty</p>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 text-center">
+          <div class="w-16 h-16 bg-gradient-to-br from-blue-800 to-slate-800 rounded-full mx-auto mb-4 flex items-center justify-center text-2xl border border-slate-700">
+            &#x1F464;
+          </div>
+          <h3 class="text-base font-semibold text-white">Team Member 3</h3>
+          <p class="text-slate-400 text-sm mt-1">Role / Specialty</p>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 text-center">
+          <div class="w-16 h-16 bg-gradient-to-br from-blue-800 to-slate-800 rounded-full mx-auto mb-4 flex items-center justify-center text-2xl border border-slate-700">
+            &#x1F464;
+          </div>
+          <h3 class="text-base font-semibold text-white">Team Member 4</h3>
+          <p class="text-slate-400 text-sm mt-1">Role / Specialty</p>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 text-center">
+          <div class="w-16 h-16 bg-gradient-to-br from-blue-800 to-slate-800 rounded-full mx-auto mb-4 flex items-center justify-center text-2xl border border-slate-700">
+            &#x1F464;
+          </div>
+          <h3 class="text-base font-semibold text-white">Team Member 5</h3>
+          <p class="text-slate-400 text-sm mt-1">Role / Specialty</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="border-t border-slate-800 py-10 px-6 text-center">
+    <p class="text-slate-500 text-sm">
+      AI-Based Research Paper Intelligence System &mdash; Senior Capstone Project &mdash; [University Name] [Year]
+    </p>
+    <div class="mt-4">
+      <a href="https://github.com/AbdelrahmannAdel/Research-System" target="_blank"
+         class="text-slate-500 hover:text-slate-300 text-sm transition-colors">
+        GitHub Repository
+      </a>
+    </div>
+  </footer>
+
+</body>
+</html>
