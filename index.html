@@ -3,264 +3,706 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AI Research Paper Intelligence System</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <meta name="description" content="ResearchPilot — Upload a research paper PDF and get classification, summary, keywords, and ranked arXiv recommendations." />
+  <meta name="theme-color" content="#f8f5ec" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#10100e" media="(prefers-color-scheme: dark)" />
+  <title>ResearchPilot — Read papers, faster.</title>
+
+  <!-- FOUC prevention: set theme BEFORE any CSS evaluates -->
   <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            brand: { primary: '#004fa3', light: '#1a73e8', dark: '#002f6b' }
-          }
-        }
-      }
-    }
+    (function () {
+      try {
+        var stored = localStorage.getItem('rp-theme');
+        var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        var theme = stored || (prefersDark ? 'dark' : 'light');
+        if (theme === 'dark') document.documentElement.classList.add('dark');
+        document.documentElement.setAttribute('data-theme', theme);
+      } catch (e) {}
+    })();
   </script>
+
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
+
   <style>
-    body { font-family: 'Inter', sans-serif; }
+    /* ============ Theme tokens ============ */
+    :root {
+      /* Surfaces */
+      --bg:        #f8f5ec;
+      --bg-2:      #f2eed4;
+      --panel:     #ede7d4;
+      --panel-2:   #e6e0c8;
+      --panel-3:   #ddd5b8;
+
+      /* Lines */
+      --line:      rgba(28, 24, 20, 0.10);
+      --line-2:    rgba(28, 24, 20, 0.18);
+      --line-3:    rgba(28, 24, 20, 0.30);
+
+      /* Text */
+      --text:      #1a1814;
+      --text-mute: #6b645a;
+      --text-dim:  #9a9488;
+
+      /* Accents */
+      --accent:    #2a5db0;
+      --accent-h:  #1d4a96;
+      --accent-2:  #7c4dba;
+      --warn:      #b86200;
+      --ok:        #2d7a3e;
+      --danger:    #b8312b;
+
+      /* Atmospheric */
+      --grid-dot:  rgba(28, 24, 20, 0.08);
+      --blob-1:    rgba(42, 93, 176, 0.10);
+      --blob-2:    rgba(124, 77, 186, 0.08);
+      --grain-blend: multiply;
+      --grain-opacity: 0.025;
+
+      /* Buttons */
+      --btn-primary-bg:   #1a1814;
+      --btn-primary-bg-h: #2a2820;
+      --btn-primary-fg:   #f8f5ec;
+
+      --btn-accent-bg:    var(--accent);
+      --btn-accent-bg-h:  var(--accent-h);
+      --btn-accent-fg:    #ffffff;
+
+      /* Selection */
+      --sel-bg: var(--accent);
+      --sel-fg: #ffffff;
+
+      color-scheme: light;
+    }
+
+    html.dark {
+      --bg:        #10100e;
+      --bg-2:      #161412;
+      --panel:     #1e1c18;
+      --panel-2:   #24221c;
+      --panel-3:   #2c2922;
+
+      --line:      rgba(236, 232, 220, 0.08);
+      --line-2:    rgba(236, 232, 220, 0.14);
+      --line-3:    rgba(236, 232, 220, 0.24);
+
+      --text:      #ece8dc;
+      --text-mute: #8a8474;
+      --text-dim:  #5e584c;
+
+      --accent:    #6daaee;
+      --accent-h:  #8cbcf2;
+      --accent-2:  #a07edd;
+      --warn:      #f5a623;
+      --ok:        #7cd886;
+      --danger:    #e8786a;
+
+      --grid-dot:  rgba(236, 232, 220, 0.045);
+      --blob-1:    rgba(109, 170, 238, 0.10);
+      --blob-2:    rgba(160, 126, 221, 0.08);
+      --grain-blend: overlay;
+      --grain-opacity: 0.05;
+
+      --btn-primary-bg:   #ece8dc;
+      --btn-primary-bg-h: #f5f2e6;
+      --btn-primary-fg:   #10100e;
+
+      --btn-accent-bg:    var(--accent);
+      --btn-accent-bg-h:  var(--accent-h);
+      --btn-accent-fg:    #0a1424;
+
+      --sel-bg: var(--accent);
+      --sel-fg: #0a1424;
+
+      color-scheme: dark;
+    }
+
+    /* ============ Base ============ */
+    * { box-sizing: border-box; }
+    html, body { background: var(--bg); }
+    body {
+      margin: 0;
+      color: var(--text);
+      font-family: 'Geist', ui-sans-serif, system-ui, sans-serif;
+      font-feature-settings: "ss01","cv11";
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+      transition: background-color 0.4s ease, color 0.3s ease;
+    }
+    .mono  { font-family: 'Geist Mono', ui-monospace, monospace; }
+    .serif { font-family: 'Instrument Serif', 'Times New Roman', serif; }
+    a { color: inherit; text-decoration: none; }
+    button { font: inherit; cursor: pointer; }
+    ::selection { background: var(--sel-bg); color: var(--sel-fg); }
+
+    /* Reduced motion */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+    }
+
+    /* ============ Atmospheric background ============ */
+    .bg-fx {
+      position: fixed; inset: 0; z-index: -1; pointer-events: none; overflow: hidden;
+      background:
+        radial-gradient(circle at 1px 1px, var(--grid-dot) 1px, transparent 0) 0 0 / 24px 24px,
+        radial-gradient(1200px 800px at 80% -10%, var(--blob-1), transparent 60%),
+        radial-gradient(900px 700px at -10% 30%, var(--blob-2), transparent 60%),
+        var(--bg);
+      transition: background 0.4s ease;
+    }
+    .bg-fx::before, .bg-fx::after {
+      content: ''; position: absolute; width: 60vmax; height: 60vmax; border-radius: 50%;
+      filter: blur(100px); opacity: 0.45; pointer-events: none;
+      animation: drift 28s ease-in-out infinite alternate;
+    }
+    .bg-fx::before { top: -25%; left: -10%; background: radial-gradient(circle, var(--blob-1), transparent 60%); }
+    .bg-fx::after  { bottom: -25%; right: -10%; background: radial-gradient(circle, var(--blob-2), transparent 60%); animation-delay: -10s; }
+    html.dark .bg-fx::before, html.dark .bg-fx::after { opacity: 0.35; }
+    @keyframes drift {
+      0%   { transform: translate(0,0) scale(1); }
+      50%  { transform: translate(40px,30px) scale(1.05); }
+      100% { transform: translate(-30px,20px) scale(0.98); }
+    }
+    body::after {
+      content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+      opacity: var(--grain-opacity); mix-blend-mode: var(--grain-blend);
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+    }
+
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 28px; position: relative; z-index: 1; }
+    .eyebrow {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-family: 'Geist Mono', monospace; font-size: 11.5px; letter-spacing: 0.18em; text-transform: uppercase;
+      color: var(--text-mute);
+    }
+    .eyebrow .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 12px var(--accent); }
+
+    /* ============ Nav ============ */
+    nav.top {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+      backdrop-filter: blur(14px) saturate(140%);
+      -webkit-backdrop-filter: blur(14px) saturate(140%);
+      background: color-mix(in srgb, var(--bg) 70%, transparent);
+      border-bottom: 1px solid var(--line);
+      transition: background-color 0.4s ease, border-color 0.3s ease;
+    }
+    nav.top .container { height: 64px; display: flex; align-items: center; justify-content: space-between; }
+    .brand { display: inline-flex; align-items: center; gap: 10px; font-weight: 600; letter-spacing: -0.01em; color: var(--text); }
+    .brand .glyph {
+      width: 22px; height: 22px; border-radius: 6px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      position: relative;
+    }
+    .brand .glyph::after { content: ''; position: absolute; inset: 4px; border-radius: 3px; background: var(--bg); transition: background-color 0.4s ease; }
+    .nav-links { display: none; }
+    @media (min-width: 768px) { .nav-links { display: flex; align-items: center; gap: 4px; } }
+    .nav-links a { color: var(--text-mute); font-size: 14px; padding: 8px 12px; border-radius: 8px; transition: color 0.15s, background 0.15s; }
+    .nav-links a:hover { color: var(--text); background: var(--panel); }
+
+    .nav-rhs { display: flex; align-items: center; gap: 8px; }
+
+    /* Theme toggle */
+    .theme-toggle {
+      width: 38px; height: 38px;
+      display: inline-flex; align-items: center; justify-content: center;
+      border-radius: 10px; border: 1px solid var(--line-2);
+      background: transparent; color: var(--text-mute);
+      transition: all 0.18s ease;
+      position: relative; overflow: hidden;
+    }
+    .theme-toggle:hover { color: var(--text); border-color: var(--line-3); background: var(--panel); }
+    .theme-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .theme-toggle .icon { position: absolute; inset: 0; display: grid; place-items: center; transition: opacity 0.3s ease, transform 0.4s cubic-bezier(.5,1.6,.4,1); }
+    .theme-toggle .sun  { opacity: 1; transform: rotate(0); }
+    .theme-toggle .moon { opacity: 0; transform: rotate(-90deg); }
+    html.dark .theme-toggle .sun  { opacity: 0; transform: rotate(90deg); }
+    html.dark .theme-toggle .moon { opacity: 1; transform: rotate(0); }
+    .theme-toggle svg { width: 16px; height: 16px; stroke: currentColor; stroke-width: 1.6; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 9px 14px; border-radius: 10px; font-size: 14px; font-weight: 500;
+      border: 1px solid var(--line-2); transition: all .18s ease;
+      color: var(--text); background: transparent;
+    }
+    .btn:hover { border-color: var(--line-3); transform: translateY(-1px); background: var(--panel); }
+    .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .btn-primary { background: var(--btn-primary-bg); color: var(--btn-primary-fg); border-color: transparent; font-weight: 600; }
+    .btn-primary:hover { background: var(--btn-primary-bg-h); transform: translateY(-1px); box-shadow: 0 8px 24px -8px var(--line-3); }
+    .btn-accent { background: var(--btn-accent-bg); color: var(--btn-accent-fg); border-color: transparent; font-weight: 600; }
+    .btn-accent:hover { background: var(--btn-accent-bg-h); transform: translateY(-1px); box-shadow: 0 8px 24px -8px var(--accent); }
+
+    /* ============ Hero ============ */
+    .hero { padding: 160px 0 100px; position: relative; }
+    .hero h1 {
+      font-size: clamp(44px, 6.6vw, 92px);
+      line-height: 0.98; letter-spacing: -0.035em; font-weight: 500;
+      max-width: 13ch; margin: 22px 0 22px;
+    }
+    .hero h1 .ital {
+      font-family: 'Instrument Serif', serif; font-style: italic; font-weight: 400; color: var(--accent);
+      transition: color 0.3s ease;
+    }
+    .hero p.lead { color: var(--text-mute); font-size: 19px; line-height: 1.55; max-width: 56ch; margin: 0; }
+    .hero .cta { display: flex; gap: 12px; margin-top: 32px; flex-wrap: wrap; }
+
+    /* Browser-window mock */
+    .window {
+      margin-top: 64px;
+      border: 1px solid var(--line-2); border-radius: 16px;
+      background: var(--panel);
+      box-shadow: 0 40px 100px -30px color-mix(in srgb, var(--text) 25%, transparent);
+      overflow: hidden;
+      transition: background-color 0.4s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+    .window-bar {
+      display: flex; align-items: center; gap: 8px;
+      padding: 12px 14px; border-bottom: 1px solid var(--line);
+      background: var(--panel-2);
+      transition: background-color 0.4s ease, border-color 0.3s ease;
+    }
+    .window-bar .lights { display: flex; gap: 6px; }
+    .window-bar .lights span { width: 11px; height: 11px; border-radius: 50%; background: var(--line-2); }
+    .window-bar .url {
+      flex: 1; text-align: center; font-family: 'Geist Mono', monospace; font-size: 12px; color: var(--text-mute);
+      background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 5px 12px; max-width: 360px; margin: 0 auto;
+      transition: background-color 0.4s ease, border-color 0.3s ease;
+    }
+    .window-body { padding: 28px; display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    @media (max-width: 760px) { .window-body { grid-template-columns: 1fr; } }
+    .panel {
+      background: var(--panel-2);
+      border: 1px solid var(--line); border-radius: 12px; padding: 18px;
+      transition: background-color 0.4s ease, border-color 0.3s ease;
+    }
+    .panel h4 { font-size: 12.5px; font-family: 'Geist Mono', monospace; text-transform: uppercase; letter-spacing: 0.16em; color: var(--text-mute); margin: 0 0 10px; font-weight: 500; }
+    .panel .row { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-top: 1px dashed var(--line); }
+    .panel .row:first-of-type { border-top: 0; }
+
+    .pill { display: inline-flex; padding: 3px 9px; border-radius: 999px; font-size: 11.5px; font-family: 'Geist Mono', monospace; }
+    .pill.accent { background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent); border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent); }
+    .pill.violet { background: color-mix(in srgb, var(--accent-2) 12%, transparent); color: var(--accent-2); border: 1px solid color-mix(in srgb, var(--accent-2) 30%, transparent); }
+    .pill.muted  { background: var(--panel-3); color: var(--text-mute); border: 1px solid var(--line); }
+
+    /* ============ Sections ============ */
+    .section { padding: 110px 0; position: relative; }
+    .section h2 { font-size: clamp(34px, 4.6vw, 60px); letter-spacing: -0.03em; font-weight: 500; line-height: 1.02; margin: 14px 0 10px; max-width: 22ch; }
+    .section p.kicker { color: var(--text-mute); font-size: 17px; max-width: 60ch; line-height: 1.55; }
+    .section h2 .ital { font-family: 'Instrument Serif', serif; font-style: italic; font-weight: 400; color: var(--accent-2); transition: color 0.3s ease; }
+
+    /* Features asymmetric grid */
+    .features {
+      display: grid; gap: 18px;
+      grid-template-columns: 1.2fr 1fr 1fr;
+      grid-template-rows: auto auto;
+      grid-template-areas: "a a b" "c d d";
+      margin-top: 56px;
+    }
+    @media (max-width: 980px) { .features { grid-template-columns: 1fr 1fr; grid-template-areas: "a a" "b c" "d d"; } }
+    @media (max-width: 600px) { .features { grid-template-columns: 1fr; grid-template-areas: "a" "b" "c" "d"; } }
+    .feat {
+      position: relative; overflow: hidden;
+      background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 26px 26px 28px;
+      transition: background-color 0.4s ease, border-color 0.2s ease, transform 0.2s ease;
+    }
+    .feat:hover { border-color: var(--line-2); transform: translateY(-2px); }
+    .feat::before {
+      content: ''; position: absolute; inset: -1px; border-radius: 18px; pointer-events: none; opacity: 0;
+      background: radial-gradient(400px 200px at var(--mx,50%) var(--my,0%), color-mix(in srgb, var(--accent) 18%, transparent), transparent 60%);
+      transition: opacity .25s ease;
+    }
+    .feat:hover::before { opacity: 1; }
+    .feat .num { font-family: 'Geist Mono', monospace; font-size: 11.5px; color: var(--text-dim); letter-spacing: 0.16em; text-transform: uppercase; }
+    .feat .ttl { font-size: 22px; letter-spacing: -0.01em; font-weight: 500; margin: 14px 0 8px; }
+    .feat .ttl .ital { font-family: 'Instrument Serif', serif; font-style: italic; font-weight: 400; color: var(--accent); }
+    .feat p { color: var(--text-mute); font-size: 15px; line-height: 1.55; margin: 0; }
+    .icn { width: 28px; height: 28px; stroke: var(--accent); stroke-width: 1.4; fill: none; }
+    .icn.violet { stroke: var(--accent-2); }
+
+    /* Pipeline */
+    .pipeline {
+      margin-top: 64px; padding: 36px;
+      background: var(--panel); border: 1px solid var(--line); border-radius: 22px;
+      transition: background-color 0.4s ease, border-color 0.3s ease;
+    }
+    .pipe-svg { width: 100%; height: auto; max-height: 360px; }
+    .pipe-svg .node rect { fill: var(--panel-2); stroke: var(--line-2); transition: fill 0.4s ease, stroke 0.3s ease; }
+    .pipe-svg .node text.num { fill: var(--text-dim); font-family: 'Geist Mono', monospace; font-size: 11px; letter-spacing: 0.14em; transition: fill 0.3s ease; }
+    .pipe-svg .node text.ttl { fill: var(--text); font-family: 'Geist', sans-serif; font-size: 16px; font-weight: 500; transition: fill 0.3s ease; }
+    .pipe-svg .node text.sub { fill: var(--text-mute); font-family: 'Geist Mono', monospace; font-size: 11px; transition: fill 0.3s ease; }
+    .pipe-svg path.flow { stroke: var(--accent); stroke-width: 1.2; fill: none; stroke-dasharray: 4 4; animation: dash 18s linear infinite; transition: stroke 0.3s ease; }
+    @keyframes dash { to { stroke-dashoffset: -200; } }
+    .pipe-svg .glow { stroke: var(--accent); stroke-width: 1.4; fill: none; }
+
+    /* Metrics */
+    .metrics { margin: 80px 0 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; transition: background-color 0.3s ease; }
+    @media (max-width: 760px) { .metrics { grid-template-columns: repeat(2, 1fr); } }
+    .metric { padding: 26px 22px; background: var(--bg); transition: background-color 0.4s ease; }
+    .metric .v { font-size: 36px; font-weight: 500; letter-spacing: -0.025em; color: var(--text); }
+    .metric .v .small { font-size: 16px; color: var(--text-mute); margin-left: 4px; }
+    .metric .l { color: var(--text-mute); font-size: 13px; font-family: 'Geist Mono', monospace; letter-spacing: 0.1em; text-transform: uppercase; margin-top: 6px; }
+
+    /* Stack */
+    .stack { margin-top: 56px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+    @media (max-width: 760px) { .stack { grid-template-columns: repeat(2, 1fr); } }
+    .stack-item {
+      padding: 22px 18px; border: 1px solid var(--line); border-radius: 14px;
+      background: var(--panel);
+      transition: background-color 0.4s ease, border-color 0.2s ease;
+    }
+    .stack-item:hover { border-color: var(--line-2); }
+    .stack-item .lbl { font-family: 'Geist Mono', monospace; font-size: 11px; color: var(--text-dim); letter-spacing: 0.14em; text-transform: uppercase; }
+    .stack-item .name { font-size: 16px; font-weight: 500; margin-top: 8px; letter-spacing: -0.005em; }
+    .stack-item .role { color: var(--text-mute); font-size: 13px; margin-top: 4px; }
+
+    /* Team */
+    .team { margin-top: 56px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; }
+    @media (max-width: 980px) { .team { grid-template-columns: repeat(3, 1fr); } }
+    @media (max-width: 600px) { .team { grid-template-columns: repeat(2, 1fr); } }
+    .person {
+      padding: 22px 18px 20px; border: 1px solid var(--line); border-radius: 16px;
+      background: var(--panel);
+      transition: background-color 0.4s ease, border-color 0.2s ease;
+    }
+    .person:hover { border-color: var(--line-2); }
+    .avatar {
+      width: 44px; height: 44px; border-radius: 50%;
+      background: conic-gradient(from 200deg at 50% 50%, var(--accent), var(--accent-2), var(--accent));
+      position: relative;
+    }
+    .avatar::after { content: ''; position: absolute; inset: 1.5px; border-radius: 50%; background: var(--panel); transition: background-color 0.4s ease; }
+    .avatar span { position: absolute; inset: 0; display: grid; place-items: center; font-family: 'Instrument Serif', serif; font-style: italic; font-size: 18px; color: var(--text); z-index: 1; }
+    .person .name { font-size: 15px; font-weight: 500; margin-top: 14px; }
+    .person .role { color: var(--text-mute); font-size: 13px; margin-top: 4px; }
+
+    /* CTA */
+    .cta-block {
+      margin: 80px 0 0; padding: 64px 28px; border-radius: 22px;
+      border: 1px solid var(--line-2);
+      background:
+        radial-gradient(600px 200px at 50% 0%, color-mix(in srgb, var(--accent) 14%, transparent), transparent 70%),
+        var(--panel);
+      text-align: center;
+      transition: background-color 0.4s ease, border-color 0.3s ease;
+    }
+    .cta-block h3 { font-size: clamp(32px, 4.4vw, 56px); letter-spacing: -0.03em; font-weight: 500; margin: 0 0 10px; }
+    .cta-block h3 .ital { font-family: 'Instrument Serif', serif; font-style: italic; font-weight: 400; color: var(--accent); }
+    .cta-block p { color: var(--text-mute); margin: 0 auto 26px; max-width: 56ch; }
+
+    footer { padding: 60px 0 40px; border-top: 1px solid var(--line); margin-top: 100px; transition: border-color 0.3s ease; }
+    footer .row { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 16px; color: var(--text-mute); font-size: 13.5px; }
+    footer a { color: var(--text-mute); }
+    footer a:hover { color: var(--text); }
+
+    /* Reveal on scroll */
+    .reveal { opacity: 0; transform: translateY(16px); transition: opacity .9s ease, transform .9s ease; }
+    .reveal.in { opacity: 1; transform: none; }
+    @keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+    .h-rise { animation: rise 0.9s cubic-bezier(.2,.7,.2,1) both; }
+    .d1 { animation-delay: 0.05s; } .d2 { animation-delay: 0.18s; } .d3 { animation-delay: 0.32s; } .d4 { animation-delay: 0.5s; }
   </style>
 </head>
-<body class="bg-slate-950 text-white">
+<body>
+  <div class="bg-fx" aria-hidden="true"></div>
 
-  <!-- Navbar -->
-  <nav class="fixed top-0 w-full z-50 bg-slate-950/90 backdrop-blur-sm border-b border-slate-800/60">
-    <div class="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-      <span class="text-base font-bold tracking-tight text-white">ResearchPilot</span>
-      <div class="flex items-center gap-3">
-        <a href="https://github.com/AbdelrahmannAdel/Research-System" target="_blank"
-           class="text-slate-400 hover:text-white text-sm transition-colors px-3 py-1.5 rounded-lg hover:bg-slate-800">
-          GitHub
-        </a>
-        <a href="#"
-           class="bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
-          Live Demo
-        </a>
+  <!-- NAV -->
+  <nav class="top">
+    <div class="container">
+      <a class="brand" href="#"><span class="glyph"></span> ResearchPilot</a>
+      <div class="nav-links">
+        <a href="#features">Capabilities</a>
+        <a href="#pipeline">Pipeline</a>
+        <a href="#stack">Stack</a>
+        <a href="#team">Team</a>
+      </div>
+      <div class="nav-rhs">
+        <button class="theme-toggle" id="theme-toggle" aria-label="Toggle dark mode" type="button">
+          <span class="icon sun" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+          </span>
+          <span class="icon moon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          </span>
+        </button>
+        <a class="btn" href="https://github.com/AbdelrahmannAdel/Research-System" target="_blank" rel="noopener">GitHub ↗</a>
+        <a class="btn btn-primary" href="#">Open demo</a>
       </div>
     </div>
   </nav>
 
-  <!-- Hero -->
-  <section class="pt-36 pb-28 px-6 text-center">
-    <div class="max-w-4xl mx-auto">
-      <div class="inline-flex items-center gap-2 bg-blue-950/50 border border-blue-800/40 rounded-full px-4 py-1.5 text-sm text-blue-300 mb-8">
-        <span class="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></span>
-        AI-Powered Research Tool
-      </div>
-      <h1 class="text-5xl md:text-6xl font-extrabold text-white leading-tight mb-6">
-        Research Paper<br />
-        <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400">
-          Intelligence System
-        </span>
-      </h1>
-      <p class="text-xl text-slate-400 mb-10 max-w-2xl mx-auto leading-relaxed">
-        Upload any research PDF and instantly receive AI-powered classification, a concise summary,
-        extracted keywords, and recommendations for similar papers from arXiv.
+  <!-- HERO -->
+  <section class="hero">
+    <div class="container">
+      <span class="eyebrow h-rise d1"><span class="dot"></span> AI Paper Intelligence · v1.0</span>
+      <h1 class="h-rise d2">Read papers, <span class="ital">faster.</span></h1>
+      <p class="lead h-rise d3">
+        ResearchPilot turns any PDF into a structured analysis — domain classification across
+        8 fields and 40 sub-fields, an academic-register summary, ranked keywords, and ten
+        live arXiv recommendations sorted by semantic similarity.
       </p>
-      <div class="flex flex-col sm:flex-row gap-4 justify-center">
-        <a href="#" class="bg-blue-600 hover:bg-blue-500 text-white font-semibold px-8 py-3.5 rounded-xl transition-colors text-base">
-          Try the Demo &rarr;
-        </a>
-        <a href="https://github.com/AbdelrahmannAdel/Research-System" target="_blank"
-           class="border border-slate-700 hover:border-slate-500 text-slate-300 hover:text-white font-semibold px-8 py-3.5 rounded-xl transition-colors text-base">
-          View on GitHub
-        </a>
+      <div class="cta h-rise d4">
+        <a class="btn btn-accent" href="#">Try the demo →</a>
+        <a class="btn" href="https://github.com/AbdelrahmannAdel/Research-System" target="_blank" rel="noopener">View source</a>
       </div>
-    </div>
-  </section>
 
-  <!-- Features -->
-  <section id="features" class="py-24 px-6 bg-slate-900/40">
-    <div class="max-w-6xl mx-auto">
-      <h2 class="text-3xl font-bold text-center text-white mb-3">What It Does</h2>
-      <p class="text-slate-400 text-center mb-14 max-w-xl mx-auto">
-        Four AI-powered capabilities delivered from a single PDF upload.
-      </p>
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 hover:border-blue-700/60 transition-colors">
-          <div class="w-12 h-12 bg-blue-950 rounded-xl flex items-center justify-center mb-4 text-2xl">&#x1F4C4;</div>
-          <h3 class="text-base font-semibold text-white mb-2">PDF Upload</h3>
-          <p class="text-slate-400 text-sm leading-relaxed">
-            Upload any research paper as a PDF. Title, abstract, and full text are extracted automatically using PyMuPDF.
-          </p>
+      <!-- Window mock -->
+      <div class="window h-rise d4" style="animation-delay:.6s">
+        <div class="window-bar">
+          <div class="lights"><span></span><span></span><span></span></div>
+          <div class="url mono">researchpilot.app/analyze · attention-is-all-you-need.pdf</div>
+          <div style="width:42px"></div>
         </div>
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 hover:border-blue-700/60 transition-colors">
-          <div class="w-12 h-12 bg-blue-950 rounded-xl flex items-center justify-center mb-4 text-2xl">&#x1F9E0;</div>
-          <h3 class="text-base font-semibold text-white mb-2">AI Classification</h3>
-          <p class="text-slate-400 text-sm leading-relaxed">
-            Fine-tuned SciBERT models categorize papers across 8 main research domains and 40 subcategories aligned with arXiv taxonomy.
-          </p>
-        </div>
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 hover:border-blue-700/60 transition-colors">
-          <div class="w-12 h-12 bg-blue-950 rounded-xl flex items-center justify-center mb-4 text-2xl">&#x270D;&#xFE0F;</div>
-          <h3 class="text-base font-semibold text-white mb-2">Smart Summary</h3>
-          <p class="text-slate-400 text-sm leading-relaxed">
-            Google Gemini generates a focused academic summary covering the paper&rsquo;s objective, methodology, and key findings.
-          </p>
-        </div>
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 hover:border-blue-700/60 transition-colors">
-          <div class="w-12 h-12 bg-blue-950 rounded-xl flex items-center justify-center mb-4 text-2xl">&#x1F50D;</div>
-          <h3 class="text-base font-semibold text-white mb-2">Paper Recommendations</h3>
-          <p class="text-slate-400 text-sm leading-relaxed">
-            Queries the live arXiv API for 20 candidates, then re-ranks them by semantic cosine similarity to surface the top 10.
-          </p>
+        <div class="window-body">
+          <div class="panel">
+            <h4>Classification</h4>
+            <div class="row"><span>Primary domain</span><span class="pill accent">cs.CL</span></div>
+            <div class="row"><span>Sub-domain</span><span class="pill accent">Machine Learning</span></div>
+            <div class="row"><span>Confidence</span><span class="mono" style="color:var(--accent)">0.972</span></div>
+            <h4 style="margin-top:18px">Keywords · YAKE</h4>
+            <div class="row" style="border:0;flex-wrap:wrap;gap:6px">
+              <span class="pill muted">attention</span>
+              <span class="pill muted">transformer</span>
+              <span class="pill muted">self-attention</span>
+              <span class="pill muted">encoder-decoder</span>
+              <span class="pill muted">positional encoding</span>
+            </div>
+          </div>
+          <div class="panel">
+            <h4>Summary · Gemini</h4>
+            <p style="color:var(--text);font-size:13.5px;line-height:1.6;margin:6px 0 14px">
+              Introduces the Transformer, an architecture relying solely on attention
+              mechanisms, dispensing with recurrence and convolutions. Achieves
+              state-of-the-art translation quality with a fraction of the training cost.
+            </p>
+            <h4>Recommendations · arXiv (top 3 of 10)</h4>
+            <div class="row"><span style="font-size:13px">BERT: Pre-training of Deep Bidirectional…</span><span class="pill violet">0.91</span></div>
+            <div class="row"><span style="font-size:13px">Layer Normalization</span><span class="pill violet">0.84</span></div>
+            <div class="row"><span style="font-size:13px">An Image is Worth 16×16 Words</span><span class="pill violet">0.79</span></div>
+          </div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- How It Works -->
-  <section id="how" class="py-24 px-6">
-    <div class="max-w-4xl mx-auto">
-      <h2 class="text-3xl font-bold text-center text-white mb-3">How It Works</h2>
-      <p class="text-slate-400 text-center mb-16 max-w-xl mx-auto">
-        Three steps from raw PDF to actionable insights.
-      </p>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-10">
-        <div class="text-center">
-          <div class="w-16 h-16 bg-gradient-to-br from-blue-600 to-blue-800 rounded-2xl flex items-center justify-center text-2xl font-bold text-white mx-auto mb-5 shadow-lg shadow-blue-900/40">
-            1
-          </div>
-          <h3 class="text-base font-semibold text-white mb-2">Upload Your Paper</h3>
-          <p class="text-slate-400 text-sm leading-relaxed">
-            Select any research PDF. The system extracts text, title, and abstract — no manual input required.
-          </p>
+  <!-- FEATURES -->
+  <section class="section" id="features">
+    <div class="container">
+      <span class="eyebrow reveal"><span class="dot"></span> 01 — Capabilities</span>
+      <h2 class="reveal">Four primitives,<br/><span class="ital">one upload.</span></h2>
+      <p class="kicker reveal">Every capability is independently inspectable — classifications, embeddings, and rankings are exposed as raw values, not just rendered pixels.</p>
+
+      <div class="features">
+        <div class="feat reveal" style="grid-area:a">
+          <div class="num">01 · Ingestion</div>
+          <svg class="icn" viewBox="0 0 24 24" style="margin-top:14px"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 14l3-3 3 3"/><path d="M12 11v6"/></svg>
+          <div class="ttl">PDF parsing with <span class="ital">structural fidelity.</span></div>
+          <p>PyMuPDF reconstructs title, abstract, body and references from any uploaded PDF. No manual annotation, no template matching — clean inputs ready for the linguistic models downstream.</p>
         </div>
-        <div class="text-center">
-          <div class="w-16 h-16 bg-gradient-to-br from-blue-600 to-blue-800 rounded-2xl flex items-center justify-center text-2xl font-bold text-white mx-auto mb-5 shadow-lg shadow-blue-900/40">
-            2
-          </div>
-          <h3 class="text-base font-semibold text-white mb-2">AI Pipeline Runs</h3>
-          <p class="text-slate-400 text-sm leading-relaxed">
-            SciBERT classifies the topic, YAKE pulls the top keywords, and Gemini produces a concise academic summary.
-          </p>
+        <div class="feat reveal" style="grid-area:b">
+          <div class="num">02 · Classification</div>
+          <svg class="icn violet" viewBox="0 0 24 24" style="margin-top:14px"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a14 14 0 0 1 0 18"/><path d="M12 3a14 14 0 0 0 0 18"/></svg>
+          <div class="ttl">SciBERT, fine-tuned.</div>
+          <p>8 domains. 40 sub-categories. Aligned to the canonical arXiv taxonomy.</p>
         </div>
-        <div class="text-center">
-          <div class="w-16 h-16 bg-gradient-to-br from-blue-600 to-blue-800 rounded-2xl flex items-center justify-center text-2xl font-bold text-white mx-auto mb-5 shadow-lg shadow-blue-900/40">
-            3
-          </div>
-          <h3 class="text-base font-semibold text-white mb-2">Discover &amp; Save</h3>
-          <p class="text-slate-400 text-sm leading-relaxed">
-            Browse live arXiv recommendations ranked by relevance. Save results to your personal private library.
-          </p>
+        <div class="feat reveal" style="grid-area:c">
+          <div class="num">03 · Summarisation</div>
+          <svg class="icn" viewBox="0 0 24 24" style="margin-top:14px"><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h10"/></svg>
+          <div class="ttl">Academic register, by design.</div>
+          <p>Gemini is constrained to a fixed schema: objective, methodology, principal findings.</p>
+        </div>
+        <div class="feat reveal" style="grid-area:d">
+          <div class="num">04 · Recommendation</div>
+          <svg class="icn violet" viewBox="0 0 24 24" style="margin-top:14px"><circle cx="11" cy="11" r="6"/><path d="M21 21l-5.2-5.2"/><circle cx="11" cy="11" r="2"/></svg>
+          <div class="ttl">Live arXiv, <span class="ital">re-ranked semantically.</span></div>
+          <p>20 candidates retrieved from the live arXiv API; Sentence-BERT embeddings re-rank by cosine similarity to surface the 10 most intellectually proximate works to the paper at hand.</p>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- Tech Stack -->
-  <section id="stack" class="py-24 px-6 bg-slate-900/40">
-    <div class="max-w-4xl mx-auto">
-      <h2 class="text-3xl font-bold text-center text-white mb-3">Tech Stack</h2>
-      <p class="text-slate-400 text-center mb-14 max-w-xl mx-auto">
-        Built with modern, production-grade open-source tools.
-      </p>
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div class="bg-slate-900 border border-slate-800 rounded-xl px-4 py-5 text-center">
-          <div class="text-2xl mb-2">&#x26DB;&#xFE0F;</div>
-          <div class="text-sm font-medium text-white">React</div>
-          <div class="text-xs text-slate-500 mt-0.5">Frontend</div>
-        </div>
-        <div class="bg-slate-900 border border-slate-800 rounded-xl px-4 py-5 text-center">
-          <div class="text-2xl mb-2">&#x1F3A8;</div>
-          <div class="text-sm font-medium text-white">Tailwind CSS</div>
-          <div class="text-xs text-slate-500 mt-0.5">Styling</div>
-        </div>
-        <div class="bg-slate-900 border border-slate-800 rounded-xl px-4 py-5 text-center">
-          <div class="text-2xl mb-2">&#x26A1;</div>
-          <div class="text-sm font-medium text-white">FastAPI</div>
-          <div class="text-xs text-slate-500 mt-0.5">Backend</div>
-        </div>
-        <div class="bg-slate-900 border border-slate-800 rounded-xl px-4 py-5 text-center">
-          <div class="text-2xl mb-2">&#x1F418;</div>
-          <div class="text-sm font-medium text-white">PostgreSQL</div>
-          <div class="text-xs text-slate-500 mt-0.5">Database</div>
-        </div>
-        <div class="bg-slate-900 border border-slate-800 rounded-xl px-4 py-5 text-center">
-          <div class="text-2xl mb-2">&#x1F916;</div>
-          <div class="text-sm font-medium text-white">SciBERT</div>
-          <div class="text-xs text-slate-500 mt-0.5">Classification</div>
-        </div>
-        <div class="bg-slate-900 border border-slate-800 rounded-xl px-4 py-5 text-center">
-          <div class="text-2xl mb-2">&#x1F48E;</div>
-          <div class="text-sm font-medium text-white">Gemini API</div>
-          <div class="text-xs text-slate-500 mt-0.5">Summarization</div>
-        </div>
-        <div class="bg-slate-900 border border-slate-800 rounded-xl px-4 py-5 text-center">
-          <div class="text-2xl mb-2">&#x1F4DA;</div>
-          <div class="text-sm font-medium text-white">arXiv API</div>
-          <div class="text-xs text-slate-500 mt-0.5">Recommendations</div>
-        </div>
-        <div class="bg-slate-900 border border-slate-800 rounded-xl px-4 py-5 text-center">
-          <div class="text-2xl mb-2">&#x1F522;</div>
-          <div class="text-sm font-medium text-white">Sentence-BERT</div>
-          <div class="text-xs text-slate-500 mt-0.5">Embeddings</div>
+  <!-- PIPELINE -->
+  <section class="section" id="pipeline">
+    <div class="container">
+      <span class="eyebrow reveal"><span class="dot"></span> 02 — Pipeline</span>
+      <h2 class="reveal">From upload to insight<br/><span class="ital">in a single pass.</span></h2>
+      <p class="kicker reveal">A compact, audit-friendly inference graph. Each node fails gracefully — uncertainty is surfaced rather than papered over.</p>
+
+      <div class="pipeline reveal">
+        <svg class="pipe-svg" viewBox="0 0 1100 320" preserveAspectRatio="xMidYMid meet">
+          <g class="node" transform="translate(20,120)">
+            <rect width="180" height="80" rx="12"/>
+            <text class="num" x="16" y="22">01 · UPLOAD</text>
+            <text class="ttl" x="16" y="46">PDF</text>
+            <text class="sub" x="16" y="64">PyMuPDF</text>
+          </g>
+          <g class="node" transform="translate(260,40)">
+            <rect width="180" height="80" rx="12"/>
+            <text class="num" x="16" y="22">02 · ENCODE</text>
+            <text class="ttl" x="16" y="46">SciBERT</text>
+            <text class="sub" x="16" y="64">8 / 40 labels</text>
+          </g>
+          <g class="node" transform="translate(260,200)">
+            <rect width="180" height="80" rx="12"/>
+            <text class="num" x="16" y="22">03 · KEYWORDS</text>
+            <text class="ttl" x="16" y="46">YAKE</text>
+            <text class="sub" x="16" y="64">unsupervised</text>
+          </g>
+          <g class="node" transform="translate(500,40)">
+            <rect width="180" height="80" rx="12"/>
+            <text class="num" x="16" y="22">04 · SUMMARISE</text>
+            <text class="ttl" x="16" y="46">Gemini</text>
+            <text class="sub" x="16" y="64">academic register</text>
+          </g>
+          <g class="node" transform="translate(500,200)">
+            <rect width="180" height="80" rx="12"/>
+            <text class="num" x="16" y="22">05 · RETRIEVE</text>
+            <text class="ttl" x="16" y="46">arXiv API</text>
+            <text class="sub" x="16" y="64">20 candidates</text>
+          </g>
+          <g class="node" transform="translate(740,120)">
+            <rect width="180" height="80" rx="12"/>
+            <text class="num" x="16" y="22">06 · RANK</text>
+            <text class="ttl" x="16" y="46">Sentence-BERT</text>
+            <text class="sub" x="16" y="64">cosine similarity</text>
+          </g>
+          <g class="node" transform="translate(960,120)">
+            <rect width="120" height="80" rx="12" stroke="var(--accent)" stroke-width="1.5"/>
+            <text class="num" x="16" y="22" fill="var(--accent)">→ OUTPUT</text>
+            <text class="ttl" x="16" y="46" fill="var(--accent)">Top 10</text>
+            <text class="sub" x="16" y="64">+ summary</text>
+          </g>
+          <path class="flow" d="M 200 160 Q 230 160 260 80"/>
+          <path class="flow" d="M 200 160 Q 230 160 260 240"/>
+          <path class="flow" d="M 440 80 L 500 80"/>
+          <path class="flow" d="M 440 240 L 500 240"/>
+          <path class="flow" d="M 680 80 Q 720 80 740 160"/>
+          <path class="flow" d="M 680 240 Q 720 240 740 160"/>
+          <path class="glow" d="M 860 160 L 960 160"/>
+        </svg>
+      </div>
+
+      <div class="metrics reveal">
+        <div class="metric"><div class="v">8<span class="small">/40</span></div><div class="l">Domains / Sub-domains</div></div>
+        <div class="metric"><div class="v">10<span class="small"> of 20</span></div><div class="l">Recs surfaced</div></div>
+        <div class="metric"><div class="v">~3<span class="small">s</span></div><div class="l">End-to-end</div></div>
+        <div class="metric"><div class="v">100<span class="small">%</span></div><div class="l">Open source</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STACK -->
+  <section class="section" id="stack">
+    <div class="container">
+      <span class="eyebrow reveal"><span class="dot"></span> 03 — Stack</span>
+      <h2 class="reveal">Built on tools<br/><span class="ital">we trust in production.</span></h2>
+      <p class="kicker reveal">Every dependency is open source. Every component is replaceable.</p>
+
+      <div class="stack">
+        <div class="stack-item reveal"><div class="lbl">Frontend</div><div class="name">React</div><div class="role">Streaming UI shell</div></div>
+        <div class="stack-item reveal"><div class="lbl">Styling</div><div class="name">Tailwind CSS</div><div class="role">Design tokens</div></div>
+        <div class="stack-item reveal"><div class="lbl">Backend</div><div class="name">FastAPI</div><div class="role">Async inference API</div></div>
+        <div class="stack-item reveal"><div class="lbl">Database</div><div class="name">PostgreSQL</div><div class="role">User libraries</div></div>
+        <div class="stack-item reveal"><div class="lbl">Classification</div><div class="name">SciBERT</div><div class="role">Fine-tuned encoder</div></div>
+        <div class="stack-item reveal"><div class="lbl">Summarisation</div><div class="name">Gemini API</div><div class="role">Constrained prompt</div></div>
+        <div class="stack-item reveal"><div class="lbl">Retrieval</div><div class="name">arXiv API</div><div class="role">Live candidate pool</div></div>
+        <div class="stack-item reveal"><div class="lbl">Embeddings</div><div class="name">Sentence-BERT</div><div class="role">Cosine re-ranker</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TEAM -->
+  <section class="section" id="team">
+    <div class="container">
+      <span class="eyebrow reveal"><span class="dot"></span> 04 — Team</span>
+      <h2 class="reveal">A senior capstone,<br/><span class="ital">three engineers.</span></h2>
+      <p class="kicker reveal">University of Bahrain · 2026</p>
+
+      <div class="team">
+        <div class="person reveal"><div class="avatar"><span>a</span></div><div class="name">Abdelrahman Adel</div><div class="role">Team Leader + Backend</div></div>
+        <div class="person reveal"><div class="avatar"><span>b</span></div><div class="name">Mohamed</div><div class="role">Backend</div></div>
+        <div class="person reveal"><div class="avatar"><span>c</span></div><div class="name">Mohamed Yaser Al Yusuf</div><div class="role">Frontend</div></div>
+      </div>
+
+      <div class="cta-block reveal">
+        <h3>Upload a paper.<br/><span class="ital">Read it differently.</span></h3>
+        <p>The repository is public. The demo is live. The pipeline is yours to inspect.</p>
+        <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+          <a class="btn btn-accent" href="#">Open the demo →</a>
+          <a class="btn" href="https://github.com/AbdelrahmannAdel/Research-System" target="_blank" rel="noopener">GitHub ↗</a>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- Team -->
-  <section id="team" class="py-24 px-6">
-    <div class="max-w-4xl mx-auto">
-      <h2 class="text-3xl font-bold text-center text-white mb-3">The Team</h2>
-      <p class="text-slate-400 text-center mb-14 max-w-xl mx-auto">
-        Senior capstone project &mdash; [University Name], [Year].
-      </p>
-      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 text-center">
-          <div class="w-16 h-16 bg-gradient-to-br from-blue-800 to-slate-800 rounded-full mx-auto mb-4 flex items-center justify-center text-2xl border border-slate-700">
-            &#x1F464;
-          </div>
-          <h3 class="text-base font-semibold text-white">Team Member 1</h3>
-          <p class="text-slate-400 text-sm mt-1">Role / Specialty</p>
-        </div>
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 text-center">
-          <div class="w-16 h-16 bg-gradient-to-br from-blue-800 to-slate-800 rounded-full mx-auto mb-4 flex items-center justify-center text-2xl border border-slate-700">
-            &#x1F464;
-          </div>
-          <h3 class="text-base font-semibold text-white">Team Member 2</h3>
-          <p class="text-slate-400 text-sm mt-1">Role / Specialty</p>
-        </div>
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 text-center">
-          <div class="w-16 h-16 bg-gradient-to-br from-blue-800 to-slate-800 rounded-full mx-auto mb-4 flex items-center justify-center text-2xl border border-slate-700">
-            &#x1F464;
-          </div>
-          <h3 class="text-base font-semibold text-white">Team Member 3</h3>
-          <p class="text-slate-400 text-sm mt-1">Role / Specialty</p>
-        </div>
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 text-center">
-          <div class="w-16 h-16 bg-gradient-to-br from-blue-800 to-slate-800 rounded-full mx-auto mb-4 flex items-center justify-center text-2xl border border-slate-700">
-            &#x1F464;
-          </div>
-          <h3 class="text-base font-semibold text-white">Team Member 4</h3>
-          <p class="text-slate-400 text-sm mt-1">Role / Specialty</p>
-        </div>
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 text-center">
-          <div class="w-16 h-16 bg-gradient-to-br from-blue-800 to-slate-800 rounded-full mx-auto mb-4 flex items-center justify-center text-2xl border border-slate-700">
-            &#x1F464;
-          </div>
-          <h3 class="text-base font-semibold text-white">Team Member 5</h3>
-          <p class="text-slate-400 text-sm mt-1">Role / Specialty</p>
-        </div>
+  <footer>
+    <div class="container">
+      <div class="row">
+        <span class="brand"><span class="glyph"></span> ResearchPilot</span>
+        <span>AI-Based Research Paper Intelligence System — Senior Capstone — University of Bahrain 2026</span>
+        <a href="https://github.com/AbdelrahmannAdel/Research-System" target="_blank" rel="noopener">github.com/AbdelrahmannAdel/Research-System ↗</a>
       </div>
-    </div>
-  </section>
-
-  <!-- Footer -->
-  <footer class="border-t border-slate-800 py-10 px-6 text-center">
-    <p class="text-slate-500 text-sm">
-      AI-Based Research Paper Intelligence System &mdash; Senior Capstone Project &mdash; [University Name] [Year]
-    </p>
-    <div class="mt-4">
-      <a href="https://github.com/AbdelrahmannAdel/Research-System" target="_blank"
-         class="text-slate-500 hover:text-slate-300 text-sm transition-colors">
-        GitHub Repository
-      </a>
     </div>
   </footer>
 
+  <script>
+    // Theme toggle
+    (function () {
+      var btn = document.getElementById('theme-toggle');
+      if (!btn) return;
+      function setTheme(theme) {
+        if (theme === 'dark') {
+          document.documentElement.classList.add('dark');
+          document.documentElement.setAttribute('data-theme', 'dark');
+          btn.setAttribute('aria-label', 'Switch to light mode');
+        } else {
+          document.documentElement.classList.remove('dark');
+          document.documentElement.setAttribute('data-theme', 'light');
+          btn.setAttribute('aria-label', 'Switch to dark mode');
+        }
+        try { localStorage.setItem('rp-theme', theme); } catch (e) {}
+      }
+      // Initialize aria-label on load
+      var current = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+      btn.setAttribute('aria-label', current === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
+
+      btn.addEventListener('click', function () {
+        var next = document.documentElement.classList.contains('dark') ? 'light' : 'dark';
+        setTheme(next);
+      });
+
+      // Track system preference if user hasn't explicitly chosen
+      try {
+        var mq = window.matchMedia('(prefers-color-scheme: dark)');
+        mq.addEventListener('change', function (e) {
+          if (!localStorage.getItem('rp-theme')) setTheme(e.matches ? 'dark' : 'light');
+        });
+      } catch (e) {}
+    })();
+
+    // Reveal on scroll
+    (function () {
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e, i) {
+          if (e.isIntersecting) {
+            e.target.style.transitionDelay = (i % 4) * 80 + 'ms';
+            e.target.classList.add('in');
+            io.unobserve(e.target);
+          }
+        });
+      }, { threshold: 0.12, rootMargin: '0px 0px -40px' });
+      document.querySelectorAll('.reveal').forEach(function (el) { io.observe(el); });
+    })();
+
+    // Card hover spotlight
+    document.querySelectorAll('.feat').forEach(function (card) {
+      card.addEventListener('mousemove', function (e) {
+        var r = card.getBoundingClientRect();
+        card.style.setProperty('--mx', ((e.clientX - r.left) / r.width * 100) + '%');
+        card.style.setProperty('--my', ((e.clientY - r.top) / r.height * 100) + '%');
+      });
+    });
+  </script>
 </body>
 </html>
